@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WolfPack Tarot Prompt Library v1.1.0</title>
+<style>
+  :root {
+    --bg: #0d0d14;
+    --bg2: #13131f;
+    --bg3: #1a1a2e;
+    --card-bg: #16162a;
+    --card-border: #2a2a4a;
+    --accent: #c084fc;
+    --accent2: #e879f9;
+    --accent3: #818cf8;
+    --gold: #f59e0b;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --major-color: #c084fc;
+    --cups-color: #60a5fa;
+    --wands-color: #f97316;
+    --swords-color: #94a3b8;
+    --pentacles-color: #4ade80;
+    --danger: #f87171;
+    --success: #34d399;
+    --warning: #fb923c;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(192,132,252,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(129,140,248,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(232,121,249,0.03) 0%, transparent 50%);
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 4rem; position: relative; z-index: 1; }
+
+  header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 2.5rem;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .logo-glyph { font-size: 2rem; color: var(--accent); }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--text3);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  .version-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    padding: 4px 14px;
+    letter-spacing: 0.1em;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+  }
+
+  .section-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .section-title::before, .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--card-border);
+  }
+
+  /* MODEL SELECTOR */
+  .model-bar {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  .model-btn {
+    background: var(--bg3);
+    border: 1px solid var(--card-border);
+    color: var(--text2);
+    padding: 0.5rem 1.5rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    font-family: 'Courier New', monospace;
+    transition: all 0.2s;
+  }
+  .model-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .model-btn.active { background: rgba(192,132,252,0.15); border-color: var(--accent); color: var(--accent); }
+
+  /* GLOBAL NSFW TOGGLE */
+  .global-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 40px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .toggle-label-sfw { font-size: 0.8rem; color: var(--success); letter-spacing: 0.1em; font-family: 'Courier New', monospace; }
+  .toggle-label-nsfw { font-size: 0.8rem; color: var(--danger); letter-spacing: 0.1em; font-family: 'Courier New', monospace; }
+
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--bg3);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    transition: 0.3s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: var(--success);
+    border-radius: 50%;
+    transition: 0.3s;
+  }
+  .toggle input:checked + .toggle-slider { border-color: var(--danger); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--danger); }
+
+  /* CHARACTERS */
+  .characters-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 640px) { .characters-grid { grid-template-columns: 1fr; } }
+
+  .char-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: border-color 0.2s;
+  }
+
+  .char-num { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--text3); }
+
+  .char-panel textarea {
+    background: var(--bg3);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    resize: vertical;
+    min-height: 90px;
+    width: 100%;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .char-panel textarea:focus { outline: none; border-color: var(--accent); }
+  .char-panel textarea::placeholder { color: var(--text3); }
+
+  .char-mode-row { display: flex; gap: 0.5rem; }
+
+  .mode-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--card-border);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-tag.active-custom { border-color: var(--accent3); color: var(--accent3); background: rgba(129,140,248,0.1); }
+  .mode-tag.active-random { border-color: var(--gold); color: var(--gold); background: rgba(245,158,11,0.1); }
+
+  /* RATING SELECTOR - shown on random slots */
+  .rating-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .rating-btn {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid var(--card-border);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Courier New', monospace;
+    background: none;
+  }
+
+  .rating-btn[data-rating="pg"].active      { border-color: var(--success); color: var(--success); background: rgba(52,211,153,0.1); }
+  .rating-btn[data-rating="pgr"].active     { border-color: #facc15; color: #facc15; background: rgba(250,204,21,0.1); }
+  .rating-btn[data-rating="r"].active       { border-color: var(--warning); color: var(--warning); background: rgba(251,146,60,0.1); }
+  .rating-btn[data-rating="x"].active       { border-color: var(--danger); color: var(--danger); background: rgba(248,113,113,0.1); }
+  .rating-btn[data-rating="pg"]:hover       { border-color: var(--success); color: var(--success); }
+  .rating-btn[data-rating="pgr"]:hover      { border-color: #facc15; color: #facc15; }
+  .rating-btn[data-rating="r"]:hover        { border-color: var(--warning); color: var(--warning); }
+  .rating-btn[data-rating="x"]:hover        { border-color: var(--danger); color: var(--danger); }
+
+  .rating-divider {
+    font-size: 0.6rem;
+    color: var(--text3);
+    align-self: center;
+    padding: 0 2px;
+  }
+
+  .custom-rating-note {
+    font-size: 0.65rem;
+    color: var(--text3);
+    font-style: italic;
+    letter-spacing: 0.05em;
+  }
+
+  .roll-char-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text2);
+    border-radius: var(--radius);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .roll-char-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  .char-archetype-name {
+    font-size: 0.75rem;
+    color: var(--accent3);
+    letter-spacing: 0.05em;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* PULL */
+  .pull-section { text-align: center; margin: 2rem 0; }
+
+  .pull-btn {
+    background: linear-gradient(135deg, rgba(192,132,252,0.2), rgba(232,121,249,0.2));
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 1rem 3rem;
+    border-radius: 40px;
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    transition: all 0.3s;
+  }
+  .pull-btn:hover {
+    background: linear-gradient(135deg, rgba(192,132,252,0.35), rgba(232,121,249,0.35));
+    box-shadow: 0 0 30px rgba(192,132,252,0.2);
+  }
+  .pull-btn:active { transform: scale(0.98); }
+
+  .pull-hint { font-size: 0.75rem; color: var(--text3); margin-top: 0.75rem; letter-spacing: 0.1em; }
+
+  /* RESULTS */
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+
+  .spread-label {
+    text-align: center;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    color: var(--text3);
+    margin-bottom: 2rem;
+    font-style: italic;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+
+  .result-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-header {
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .card-position { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--text3); margin-bottom: 0.25rem; }
+  .card-name { font-size: 1.05rem; font-weight: 400; letter-spacing: 0.05em; }
+
+  .card-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .suit-badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .suit-major    { border-color: var(--major-color); color: var(--major-color); }
+  .suit-cups     { border-color: var(--cups-color); color: var(--cups-color); }
+  .suit-wands    { border-color: var(--wands-color); color: var(--wands-color); }
+  .suit-swords   { border-color: var(--swords-color); color: var(--swords-color); }
+  .suit-pentacles{ border-color: var(--pentacles-color); color: var(--pentacles-color); }
+
+  .reversed-badge {
+    font-size: 0.6rem;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 2px 8px;
+    border-radius: 20px;
+    opacity: 0.8;
+  }
+
+  .result-rating-badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    font-family: 'Courier New', monospace;
+  }
+  .badge-pg      { border-color: var(--success); color: var(--success); }
+  .badge-pgr     { border-color: #facc15; color: #facc15; }
+  .badge-r       { border-color: var(--warning); color: var(--warning); }
+  .badge-x       { border-color: var(--danger); color: var(--danger); }
+  .badge-custom  { border-color: var(--accent3); color: var(--accent3); }
+
+  .card-char-name {
+    font-size: 0.72rem;
+    color: var(--accent3);
+    letter-spacing: 0.05em;
+    margin-top: 0.3rem;
+    font-family: 'Courier New', monospace;
+  }
+
+  .card-theme {
+    font-size: 0.72rem;
+    color: var(--text3);
+    font-style: italic;
+    line-height: 1.4;
+    padding: 0.5rem 1.25rem;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .prompt-block {
+    padding: 0.75rem 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prompt-label { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text3); }
+
+  .prompt-text {
+    background: var(--bg3);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    line-height: 1.55;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .prompt-text.negative { color: var(--danger); opacity: 0.85; }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text2);
+    border-radius: var(--radius);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.7rem;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+    align-self: flex-start;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--success); color: var(--success); }
+
+  .reset-row { text-align: center; margin-top: 1rem; }
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text3);
+    padding: 0.5rem 1.5rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    font-family: Georgia, serif;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--text2); color: var(--text2); }
+
+  footer {
+    text-align: center;
+    padding: 2rem 0 1rem;
+    border-top: 1px solid var(--card-border);
+    margin-top: 3rem;
+    font-size: 0.7rem;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    line-height: 2;
+  }
+
+  .error-msg {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: var(--radius);
+    color: var(--danger);
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  /* SPREAD SELECTOR */
+  .spread-selector {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .spread-btn {
+    background: var(--bg3);
+    border: 1px solid var(--card-border);
+    color: var(--text2);
+    padding: 0.45rem 1.1rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    font-family: Georgia, serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .spread-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .spread-btn.active { background: rgba(192,132,252,0.15); border-color: var(--accent); color: var(--accent); }
+
+  .nsfw-locked { display: none; }
+  body.nsfw-on .nsfw-locked { display: flex; }
+  body.nsfw-on .sfw-only-rating { display: none; }
+
+  .header-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .info-btn {
+    display: inline-flex;
+    align-items: center;
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+  .info-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* AGE GATE OVERLAY */
+  .age-gate-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 10, 0.97);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .age-gate-overlay.hidden { display: none; }
+
+  .age-gate-box {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    max-width: 480px;
+    width: 100%;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .age-gate-glyph { font-size: 2.5rem; color: var(--accent); }
+
+  .age-gate-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .age-gate-body {
+    font-size: 0.82rem;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  .age-gate-disclaimer {
+    font-size: 0.72rem;
+    color: var(--text3);
+    line-height: 1.6;
+    border-top: 1px solid var(--card-border);
+    padding-top: 1rem;
+    font-style: italic;
+  }
+
+  .age-gate-btn-row {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .age-confirm-btn {
+    background: rgba(192,132,252,0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 0.65rem 2rem;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    transition: all 0.2s;
+  }
+  .age-confirm-btn:hover { background: rgba(192,132,252,0.28); }
+
+  .age-deny-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text3);
+    padding: 0.65rem 2rem;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    transition: all 0.2s;
+  }
+  .age-deny-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* INFO MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 10, 0.88);
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal-box {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .modal-close {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text3);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { border-color: var(--text2); color: var(--text); }
+
+  .modal-section-head {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent3);
+    margin-bottom: 0.4rem;
+  }
+
+  .modal-body-text {
+    font-size: 0.82rem;
+    color: var(--text2);
+    line-height: 1.75;
+  }
+
+  .modal-body-text + .modal-body-text { margin-top: 0.5rem; }
+
+  .modal-step {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text2);
+    line-height: 1.6;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .modal-step:last-child { border-bottom: none; }
+
+  .modal-step-num {
+    font-size: 0.7rem;
+    color: var(--accent);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    padding-top: 2px;
+    min-width: 24px;
+  }
+
+  .modal-warning {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    font-size: 0.78rem;
+    color: var(--danger);
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+
+  .modal-rating-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 1rem;
+    font-size: 0.8rem;
+  }
+  .modal-rating-key {
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    align-self: start;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+  .modal-rating-val { color: var(--text2); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="container">
+
+<header>
+  <div class="logo-row">
+    <span class="logo-glyph">&#9670;</span>
+    <h1>Tarot Prompt Library</h1>
+    <span class="logo-glyph">&#9670;</span>
+  </div>
+  <p class="subtitle">WolfPack Suite &mdash; AI Image Prompt Generator</p>
+  <div class="header-meta-row">
+    <span class="version-badge">v1.1.0</span>
+    <button class="info-btn" id="infoBtn">? How to use</button>
+  </div>
+</header>
+
+<!-- AGE GATE -->
+<div class="age-gate-overlay" id="ageGate">
+  <div class="age-gate-box">
+    <div class="age-gate-glyph">&#9670;</div>
+    <div class="age-gate-title">Before you enter</div>
+    <div class="age-gate-body">
+      The WolfPack Tarot Prompt Library generates AI image prompts for use with Stable Diffusion and compatible models.<br><br>
+      This tool includes optional adult content (NSFW) which may be enabled by the user. By entering, you confirm that you are <strong>18 years of age or older</strong> and that it is legal to view adult material in your jurisdiction.
+    </div>
+    <div class="age-gate-disclaimer">
+      All characters depicted in generated prompts are fictional and are intended to represent adults aged 18 or over. No real persons are depicted or implied. This tool generates text prompts only and does not produce images directly.
+    </div>
+    <div class="age-gate-btn-row">
+      <button class="age-confirm-btn" id="ageConfirm">I am 18 or older &mdash; Enter</button>
+      <button class="age-deny-btn" id="ageDeny">Exit</button>
+    </div>
+  </div>
+</div>
+
+<!-- INFO MODAL -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">How to use</div>
+      <button class="modal-close" id="infoClose">&times;</button>
+    </div>
+
+    <div>
+      <div class="modal-section-head">Overview</div>
+      <div class="modal-body-text">The Tarot Prompt Library generates Stable Diffusion image prompts by combining your characters with randomly drawn tarot cards. Each card contributes its own visual symbolism and thematic energy to the prompt, producing three unique outputs in a Past &middot; Present &middot; Future spread.</div>
+    </div>
+
+    <div>
+      <div class="modal-section-head">Steps</div>
+      <div class="modal-step"><span class="modal-step-num">01</span><span>Select your <strong>checkpoint family</strong> at the top. This changes the quality prefix tags and art style language in the output to match Illustrious / NoobAI-XL, Pony Diffusion, or Anima.</span></div>
+      <div class="modal-step"><span class="modal-step-num">02</span><span>Toggle <strong>SFW / NSFW</strong> to unlock the appropriate rating tiers. NSFW mode must be enabled before R or X rated outputs become available.</span></div>
+      <div class="modal-step"><span class="modal-step-num">03</span><span>Set up your three <strong>character slots</strong>. Switch each slot between Custom OC (paste any tag string or full prompt) and Random (picks from 22 anime archetypes with a Reroll option).</span></div>
+      <div class="modal-step"><span class="modal-step-num">04</span><span>On <strong>Random slots</strong>, choose a per-card content rating. SFW mode offers PG and PG-R. NSFW mode offers R and X.</span></div>
+      <div class="modal-step"><span class="modal-step-num">05</span><span>Press <strong>Draw Three Cards</strong>. Three cards are drawn at random from the full 78-card deck. Each card may be upright or reversed (25% chance). Reversed cards add shadowed and disrupted imagery to the prompt.</span></div>
+      <div class="modal-step"><span class="modal-step-num">06</span><span>Copy the <strong>positive</strong> and <strong>negative</strong> prompts from each result card and paste them into your SD frontend of choice.</span></div>
+    </div>
+
+    <div>
+      <div class="modal-section-head">Content ratings</div>
+      <div class="modal-rating-grid">
+        <span class="modal-rating-key" style="border-color:var(--success);color:var(--success)">PG</span>
+        <span class="modal-rating-val">Fully clothed, family safe. No skin, no suggestive elements.</span>
+        <span class="modal-rating-key" style="border-color:#facc15;color:#facc15">PG-R</span>
+        <span class="modal-rating-val">Suggestive but tasteful. Midriff, thighs, form-fitting outfits. Closer to ecchi. No nudity.</span>
+        <span class="modal-rating-key" style="border-color:var(--warning);color:var(--warning)">R</span>
+        <span class="modal-rating-val">Cleavage, implied nipples, revealing lingerie. Large male genitals implied through clothing. No full nudity.</span>
+        <span class="modal-rating-key" style="border-color:var(--danger);color:var(--danger)">X</span>
+        <span class="modal-rating-val">Full nudity and explicit content. Character type is rolled randomly at draw: Standard (60%), Femboy (20%), Futanari (20%). NSFW toggle must be enabled.</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="modal-section-head">Tips</div>
+      <div class="modal-body-text">Custom OC prompts can be a full positive prompt string or just a tag list describing your character. The tool merges them cleanly with the card imagery either way. You do not need to include quality boosters in your custom prompt as the selected model prefix handles those.</div>
+      <div class="modal-body-text" style="margin-top:0.6rem">Suit-specific art style language is applied automatically per card. Cups outputs lean into watercolor and emotional depth, Wands get fire and dynamism, Swords get storm and sharp lines, Pentacles get earthy texture and botanical detail.</div>
+    </div>
+
+    <div class="modal-warning">
+      &#9888; All characters generated by this tool are fictional and are intended to represent adults aged 18 or over. The random archetype pool and all custom prompt outputs are assumed to depict adult characters only. This tool generates text prompts only and does not produce images directly.
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Checkpoint Family</div>
+<div class="model-bar">
+  <button class="model-btn active" data-model="illustrious">Illustrious / NoobAI-XL</button>
+  <button class="model-btn" data-model="pony">Pony Diffusion</button>
+  <button class="model-btn" data-model="anima">Anima / AnimaPencil</button>
+</div>
+
+<div class="section-title">Content Rating</div>
+<div class="global-toggle-row">
+  <span class="toggle-label-sfw">SFW</span>
+  <label class="toggle">
+    <input type="checkbox" id="nsfwToggle">
+    <span class="toggle-slider"></span>
+  </label>
+  <span class="toggle-label-nsfw">NSFW</span>
+</div>
+
+<div class="section-title">Spread</div>
+<div class="spread-selector" id="spreadSelector">
+  <button class="spread-btn active" data-spread="ppf">Past / Present / Future</button>
+  <button class="spread-btn" data-spread="sao">Situation / Action / Outcome</button>
+  <button class="spread-btn" data-spread="know">What I Know / Don't Know / Need to Know</button>
+  <button class="spread-btn" data-spread="seeker">The Seeker / The Journey / The Destination</button>
+</div>
+
+<div class="section-title">Characters</div>
+<div class="characters-grid" id="charGrid"></div>
+
+<div class="section-title">The Draw</div>
+<div class="error-msg" id="errorMsg">Please fill in or randomise all three character slots before drawing.</div>
+<div class="pull-section">
+  <button class="pull-btn" id="pullBtn">&#10022; Draw Three Cards &#10022;</button>
+  <p class="pull-hint" id="pullHint">Three cards drawn from the full 78-card deck &mdash; Past &middot; Present &middot; Future</p>
+</div>
+
+<div class="results-section" id="resultsSection">
+  <div class="section-title">Your Reading</div>
+  <p class="spread-label" id="spreadLabel">Three-card spread &mdash; Past &middot; Present &middot; Future</p>
+  <div class="cards-grid" id="cardsGrid"></div>
+  <div class="reset-row">
+    <button class="reset-btn" id="resetBtn">&#8635; New Reading</button>
+  </div>
+</div>
+
+<footer>
+  WolfPack Suite &mdash; Tarot Prompt Library v1.1.0<br>
+  For use with Stable Diffusion &mdash; Illustrious / Pony / Anima
+</footer>
+</div>
+
+<script>
+const SPREADS = {
+  ppf:    { label: 'Past / Present / Future',                   positions: ['Past', 'Present', 'Future'] },
+  sao:    { label: 'Situation / Action / Outcome',              positions: ['Situation', 'Action', 'Outcome'] },
+  know:   { label: "What I Know / Don't Know / Need to Know",   positions: ["What I Know", "What I Don't Know", "What I Need to Know"] },
+  seeker: { label: 'The Seeker / The Journey / The Destination', positions: ['The Seeker', 'The Journey', 'The Destination'] },
+};
+
+let selectedSpread = 'ppf';
+
+const ARCHETYPES = [
+  { name: 'Shrine Maiden',      tags: '1girl, miko, red hakama, white haori, long hair, serene expression, holding gohei, sacred shrine' },
+  { name: 'Battle Mage',        tags: '1girl, battle mage, ornate staff, flowing robes, casting spell, arcane energy, determined expression' },
+  { name: 'Dark Knight',        tags: '1girl, dark knight, black plate armor, great sword, crimson cape, battle-scarred, intense gaze' },
+  { name: 'Forest Elf',         tags: '1girl, elf, pointed ears, green dress, long silver hair, bow and quiver, nature magic, calm expression' },
+  { name: 'Demon Hunter',       tags: '1girl, demon hunter, leather armor, dual pistols, silver chains, scarred, intense, moonlight' },
+  { name: 'Sea Witch',          tags: '1girl, sea witch, tattered dark dress, coral jewelry, damp hair, stormy ocean, mysterious expression' },
+  { name: 'Scholar',            tags: '1girl, scholar, round glasses, ink-stained fingers, open tome, candlelight, studious, library' },
+  { name: 'Assassin',           tags: '1girl, assassin, black hood, twin daggers, shadow cloak, rooftop, stealth, glowing eyes' },
+  { name: 'Idol',               tags: '1girl, idol, microphone, stage lighting, sparkle outfit, bright smile, performer' },
+  { name: 'Vampire Noble',      tags: '1girl, vampire, aristocratic dress, pale skin, crimson eyes, bat motif, moonlit ballroom' },
+  { name: 'Alchemist',          tags: '1girl, alchemist, leather apron, vials and potions, goggles pushed up, workshop, curious expression' },
+  { name: 'Celestial Knight',   tags: '1girl, celestial knight, white gold armor, wings, holy lance, divine light, heavenly' },
+  { name: 'Kunoichi',           tags: '1girl, kunoichi, dark shinobi outfit, kunai, cherry blossoms, stealthy, red eyes, night' },
+  { name: 'Pirate Captain',     tags: '1girl, pirate captain, tricorn hat, long coat, cutlass, ship deck, ocean wind, bold expression' },
+  { name: 'Spirit Medium',      tags: '1girl, spirit medium, traditional dress, paper talismans, floating orbs, ethereal, calm expression' },
+  { name: 'Berserker',          tags: '1girl, berserker, fur cloak, battle axe, tribal markings, fierce, mountain' },
+  { name: 'Witch',              tags: '1girl, witch, pointed hat, cauldron, spell book, broom, moonlit cottage, mysterious smile' },
+  { name: 'Catgirl Knight',     tags: '1girl, catgirl, cat ears, cat tail, plate armor, sword, castle courtyard' },
+  { name: 'Empress',            tags: '1girl, empress, elaborate crown, imperial gown, throne room, commanding presence, regal' },
+  { name: 'Wandering Swordsman',tags: '1girl, ronin, torn kimono, katana, dusty road, weary but resolved, sunset' },
+  { name: 'Oracle',             tags: '1girl, oracle, blindfolded, flowing white dress, cosmic background, stars, prophetic aura' },
+  { name: 'Fallen Angel',       tags: '1girl, fallen angel, torn black wings, gothic dress, sorrowful, dramatic light, cracked halo' },
+];
+
+const RATING_TAGS = {
+  pg: {
+    positive: 'fully clothed, modest outfit, safe for work, no skin, family safe',
+    negative: 'revealing, nsfw, nude, naked, suggestive, cleavage, underwear',
+    label: 'PG',
+  },
+  pgr: {
+    positive: 'form-fitting outfit, midriff, thighs visible, slightly suggestive, tasteful, ecchi',
+    negative: 'nude, naked, nipples, genitals, explicit',
+    label: 'PG-R',
+  },
+  r: {
+    positive: 'cleavage, low cut dress, revealing outfit, implied nipples, covered, suggestive lingerie',
+    negative: 'nude, naked, full nudity, exposed nipples, genitals visible',
+    label: 'R',
+    male_positive: 'shirtless, muscular, bulge visible through clothing, large package implied, suggestive male',
+    label: 'R',
+  },
+  x: {
+    positive: 'nude, naked, explicit, nsfw, uncensored',
+    negative: 'censored, mosaic',
+    label: 'X',
+  },
+};
+
+const X_OUTCOMES = [
+  { type: 'standard', weight: 60, tags: 'nude, naked, breasts, explicit, nsfw', label: 'Standard' },
+  { type: 'femboy',   weight: 20, tags: 'femboy, feminine male, trap, androgynous, slender, flat chest, penis, nude, explicit, nsfw', label: 'Femboy' },
+  { type: 'futanari', weight: 20, tags: 'futanari, futa, penis, large breasts, nude, explicit, nsfw', label: 'Futanari' },
+];
+
+function rollXOutcome() {
+  const roll = Math.random() * 100;
+  let acc = 0;
+  for (const o of X_OUTCOMES) {
+    acc += o.weight;
+    if (roll < acc) return o;
+  }
+  return X_OUTCOMES[0];
+}
+
+const MODEL_PREFIXES = {
+  illustrious: {
+    positive: 'masterpiece, best quality, very aesthetic, absurdres',
+    negative: 'worst quality, low quality, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, jpeg artifacts, signature, watermark, username, blurry',
+  },
+  pony: {
+    positive: 'score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up, source_anime',
+    negative: 'score_1, score_2, score_3, score_4, worst quality, bad quality, low quality, lowres, bad anatomy, bad hands, text, error, cropped, jpeg artifacts, signature, watermark, blurry',
+  },
+  anima: {
+    positive: 'masterpiece, best quality, ultra-detailed, illustration, anime style',
+    negative: 'worst quality, low quality, normal quality, lowres, bad anatomy, bad hands, missing fingers, blurry, jpeg artifacts, signature, watermark, text',
+  },
+};
+
+const CARD_STYLES_BY_MODEL = {
+  illustrious: {
+    major:     'intricate tarot card art, ornate gold border, mystical symbolism, rich jewel tones, detailed linework, fantasy illustration',
+    cups:      'blue watercolor, flowing dreamlike quality, emotional depth, luminous, delicate linework',
+    wands:     'warm amber and orange tones, energetic brushwork, passionate and dynamic, glowing embers',
+    swords:    'silver and grey palette, sharp precise lines, dramatic contrast, stormy atmosphere',
+    pentacles: 'earthy warm tones, detailed botanical elements, grounded natural textures, golden light',
+  },
+  pony: {
+    major:     'detailed anime tarot illustration, highly stylized, arcane aesthetics, glowing magical effects, vivid colors',
+    cups:      'soft blue anime aesthetic, watercolor-like backgrounds, emotional expression, flowing water effects',
+    wands:     'fiery anime style, dynamic poses, flames and sparks, bold warm palette',
+    swords:    'cool toned anime art, wind effects, sharp linework, dramatic lighting',
+    pentacles: 'earthy anime tones, nature backgrounds, grounded and warm, detailed textures',
+  },
+  anima: {
+    major:     'pencil sketch style tarot art, detailed inking, classical illustration technique, atmospheric shading',
+    cups:      'soft pencil shading, flowing lines, melancholic mood, gentle watercolor wash',
+    wands:     'energetic pencil strokes, movement lines, warm ink tones, expressive marks',
+    swords:    'crisp clean lines, dramatic shadows, precise inking, grey tones',
+    pentacles: 'detailed cross-hatching, organic textures, warm pencil tones, grounded feel',
+  },
+};
+
+const TAROT = (() => {
+  const major = [
+    { name: 'The Fool',         suit: 'Major Arcana', theme: 'New beginnings, innocence, spontaneity, a free spirit stepping into the unknown', style: 'cliff edge at dawn, flower in hand, carefree posture, wind, open sky, sunrise colors' },
+    { name: 'The Magician',     suit: 'Major Arcana', theme: 'Power, skill, concentration, manifestation, willpower', style: 'ritual altar with wand cup sword and pentacle, one arm raised to sky, cosmic energy channeling' },
+    { name: 'The High Priestess',suit:'Major Arcana', theme: 'Intuition, sacred knowledge, divine feminine, the subconscious', style: 'seated between two pillars, crescent moon, flowing robes, mysterious veil, moonlit temple' },
+    { name: 'The Empress',      suit: 'Major Arcana', theme: 'Fertility, femininity, beauty, nature, abundance, nurturing', style: 'lush garden throne, wheat crown, surrounded by flowers and nature, warm golden light' },
+    { name: 'The Emperor',      suit: 'Major Arcana', theme: 'Authority, structure, control, fatherhood, establishment', style: 'stone throne with ram head armrests, mountain backdrop, regal armor, scepter, commanding' },
+    { name: 'The Hierophant',   suit: 'Major Arcana', theme: 'Spiritual wisdom, religious beliefs, conformity, tradition', style: 'cathedral interior, elaborate vestments, blessing gesture, ornate staff, stained glass light' },
+    { name: 'The Lovers',       suit: 'Major Arcana', theme: 'Love, harmony, relationships, values alignment, choices', style: 'divine light from above, angelic figure overhead, couple facing each other, garden paradise' },
+    { name: 'The Chariot',      suit: 'Major Arcana', theme: 'Control, willpower, success, ambition, determination', style: 'armored figure in celestial chariot, two sphinxes, crescent moon armor, stars, triumphant' },
+    { name: 'Strength',         suit: 'Major Arcana', theme: 'Strength, courage, patience, control, compassion', style: 'figure gently holding lion jaws, infinity symbol above head, floral garland, serene confidence' },
+    { name: 'The Hermit',       suit: 'Major Arcana', theme: 'Soul-searching, introspection, being alone, inner guidance', style: 'mountain peak, lantern with star, long staff, solitary figure, winter night, wisdom' },
+    { name: 'Wheel of Fortune', suit: 'Major Arcana', theme: 'Good luck, karma, life cycles, destiny, a turning point', style: 'giant celestial wheel with symbols, golden light, cosmic sky, figures ascending and descending' },
+    { name: 'Justice',          suit: 'Major Arcana', theme: 'Justice, fairness, truth, cause and effect, law', style: 'seated figure with scales and sword, red robes, stone chamber, balanced impartial gaze' },
+    { name: 'The Hanged Man',   suit: 'Major Arcana', theme: 'Pause, surrender, letting go, new perspectives', style: 'suspended upside down from one foot, calm expression, golden halo, voluntary stillness, living wood' },
+    { name: 'Death',            suit: 'Major Arcana', theme: 'Endings, change, transformation, transition', style: 'black armored figure on white horse, black banner with white rose, rising sun between towers' },
+    { name: 'Temperance',       suit: 'Major Arcana', theme: 'Balance, moderation, patience, purpose, meaning', style: 'angelic figure pouring liquid between cups, one foot water one foot land, iris flowers, mountain path' },
+    { name: 'The Devil',        suit: 'Major Arcana', theme: 'Bondage, addiction, sexuality, materialism, shadow self', style: 'dark goat-headed figure on throne, chained figures below, torchlight, cave, bat wings' },
+    { name: 'The Tower',        suit: 'Major Arcana', theme: 'Sudden change, upheaval, chaos, revelation, awakening', style: 'lightning strikes tall tower, crown blown off, figures falling, flames, dark storm sky, crumbling stone' },
+    { name: 'The Star',         suit: 'Major Arcana', theme: 'Hope, faith, purpose, renewal, spirituality', style: 'figure pouring water under star-filled sky, seven smaller stars, serene night, kneeling by pool' },
+    { name: 'The Moon',         suit: 'Major Arcana', theme: 'Illusion, fear, the unconscious, confusion, complexity', style: 'full moon between two towers, wolf and dog howling, crayfish in water, long winding path, eerie light' },
+    { name: 'The Sun',          suit: 'Major Arcana', theme: 'Positivity, fun, warmth, success, vitality', style: 'radiant sun above, child on white horse, sunflowers, banner of victory, joyful, golden light' },
+    { name: 'Judgement',        suit: 'Major Arcana', theme: 'Judgement, rebirth, inner calling, absolution', style: 'angel blowing trumpet from clouds, figures rising from coffins, divine light, grey mountains' },
+    { name: 'The World',        suit: 'Major Arcana', theme: 'Completion, integration, accomplishment, the end of a cycle', style: 'dancing figure in laurel wreath, four corner figures in clouds, purple sash, cosmic completion' },
+  ];
+
+  const suits = [
+    { suit: 'Cups',      suitKey: 'cups',      element: 'water and emotion', styleBase: 'blue watercolor washes, cups and chalices, moonlit water, emotional depth, flowing forms' },
+    { suit: 'Wands',     suitKey: 'wands',     element: 'fire and ambition', styleBase: 'warm firelight, wooden staffs with budding leaves, dynamic energy, passion and will' },
+    { suit: 'Swords',    suitKey: 'swords',    element: 'air and intellect', styleBase: 'grey storm clouds, sharp silver blades, wind-swept, intellectual tension, dramatic sky' },
+    { suit: 'Pentacles', suitKey: 'pentacles', element: 'earth and material', styleBase: 'earthy greens, golden pentacles with star, nature and stone, grounded stable energy' },
+  ];
+
+  const pips = [
+    { num: 'Ace',    theme: 'Pure potential, new beginning, seed of power',           style: 'single symbol held aloft in divine light, hand from clouds, pristine and radiant' },
+    { num: 'Two',    theme: 'Duality, choice, balance, crossroads',                   style: 'two figures or symbols facing each other, moment of decision, symmetry and tension' },
+    { num: 'Three',  theme: 'Expansion, growth, collaboration, first results',        style: 'three figures or symbols together, early harvest, growing momentum' },
+    { num: 'Four',   theme: 'Stability, rest, foundation, consolidation',             style: 'four pillars or symbols in solid arrangement, rest and security, established ground' },
+    { num: 'Five',   theme: 'Conflict, adversity, loss, struggle, challenge',         style: 'discord between figures, scattered symbols, storm or strife, difficult terrain' },
+    { num: 'Six',    theme: 'Harmony, generosity, charity, moving forward',           style: 'balance restored, gifts given or received, warm cooperative light, motion after stillness' },
+    { num: 'Seven',  theme: 'Perseverance, challenge, determination, strategy',       style: 'single figure standing against many, strategic positioning, defensive stance, focus' },
+    { num: 'Eight',  theme: 'Movement, speed, change, urgency, action',               style: 'rapid motion implied, multiple symbols in swift arcs, kinetic energy, rushing forward' },
+    { num: 'Nine',   theme: 'Near-completion, resilience, endurance, almost there',   style: 'lone figure near the finish, weary but standing, nine symbols surrounding' },
+    { num: 'Ten',    theme: 'Culmination, fulfilment, end of a cycle, completion',    style: 'ten symbols in completion arrangement, the full weight and reward of the suit' },
+    { num: 'Page',   theme: 'A student, new energy, a message, curiosity, learning',  style: 'young figure holding the suit symbol aloft, eager expression, open landscape' },
+    { num: 'Knight', theme: 'Action, adventure, movement, impulse, quest',            style: 'armored rider in motion, suit symbol prominent, charging forward with purpose' },
+    { num: 'Queen',  theme: 'Mature feminine power, mastery, nurturing authority',    style: 'throne of the suit element, commanding nurturing figure, full mastery of the suit' },
+    { num: 'King',   theme: 'Mastery, authority, leadership, full dominion',          style: 'grand throne, regal bearing, suit symbols adorning the setting, wise and commanding' },
+  ];
+
+  const deck = [...major];
+  for (const s of suits) {
+    for (const p of pips) {
+      deck.push({
+        name: `${p.num} of ${s.suit}`,
+        suit: s.suit,
+        suitKey: s.suitKey,
+        theme: `${p.theme}. Energy of ${s.element}.`,
+        style: `${p.style}, ${s.styleBase}`,
+      });
+    }
+  }
+  return deck;
+})();
+
+function getSuitClass(suit) {
+  const m = { 'Major Arcana':'suit-major', 'Cups':'suit-cups', 'Wands':'suit-wands', 'Swords':'suit-swords', 'Pentacles':'suit-pentacles' };
+  return m[suit] || 'suit-major';
+}
+
+function getSuitKey(card) {
+  return card.suitKey || 'major';
+}
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+let selectedModel = 'illustrious';
+let isNSFW = false;
+let charModes    = ['custom', 'custom', 'custom'];
+let charArchetypes = [null, null, null];
+let charRatings  = ['pg', 'pg', 'pg'];
+
+const SFW_RATINGS  = ['pg', 'pgr'];
+const NSFW_RATINGS = ['r', 'x'];
+
+function getRatingOptions() {
+  if (isNSFW) return NSFW_RATINGS;
+  return SFW_RATINGS;
+}
+
+function clampRating(idx) {
+  const allowed = getRatingOptions();
+  if (!allowed.includes(charRatings[idx])) charRatings[idx] = allowed[0];
+}
+
+function ratingLabel(r) {
+  return { pg: 'PG', pgr: 'PG-R', r: 'R', x: 'X' }[r] || r.toUpperCase();
+}
+
+function ratingDesc(r) {
+  return {
+    pg:  'Fully clothed, family safe',
+    pgr: 'Suggestive, closer to ecchi',
+    r:   'Cleavage, implied nudity, large genitals implied',
+    x:   'Full nudity + random type',
+  }[r] || '';
+}
+
+function buildCharGrid() {
+  const grid = document.getElementById('charGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    clampRating(i);
+    const isRandom = charModes[i] === 'random';
+    const options = getRatingOptions();
+
+    const panel = document.createElement('div');
+    panel.className = 'char-panel';
+
+    let ratingHtml = '';
+    if (isRandom) {
+      ratingHtml = `
+        <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);margin-bottom:2px;">Rating</div>
+        <div class="rating-row">
+          ${options.map(r => `
+            <button class="rating-btn ${charRatings[i]===r?'active':''}" data-rating="${r}" data-idx="${i}" title="${ratingDesc(r)}">${ratingLabel(r)}</button>
+          `).join('')}
+        </div>
+        <div style="font-size:0.62rem;color:var(--text3);font-style:italic;">${ratingDesc(charRatings[i])}${charRatings[i]==='x'?' &mdash; type rolled at draw':''}</div>
+      `;
+    } else {
+      ratingHtml = `<div class="custom-rating-note">Rating from your prompt</div>`;
+    }
+
+    panel.innerHTML = `
+      <div class="char-num">Character ${i + 1}</div>
+      <div class="char-mode-row">
+        <span class="mode-tag ${!isRandom?'active-custom':''}" data-mode="custom" data-idx="${i}">Custom OC</span>
+        <span class="mode-tag ${isRandom?'active-random':''}" data-mode="random" data-idx="${i}">Random</span>
+      </div>
+      ${isRandom ? `
+        <div class="char-archetype-name">${charArchetypes[i] ? charArchetypes[i].name : 'No archetype selected'}</div>
+        <button class="roll-char-btn" data-idx="${i}">&#9670; ${charArchetypes[i] ? 'Reroll' : 'Roll Archetype'}</button>
+      ` : `
+        <textarea id="charInput${i}" placeholder="Paste your OC prompt or tag list here&#10;(e.g. 1girl, long blue hair, red eyes, ...)" rows="4"></textarea>
+      `}
+      ${ratingHtml}
+    `;
+    grid.appendChild(panel);
+  }
+
+  grid.querySelectorAll('.mode-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const idx = parseInt(tag.dataset.idx);
+      charModes[idx] = tag.dataset.mode;
+      if (tag.dataset.mode === 'random' && !charArchetypes[idx]) {
+        charArchetypes[idx] = rand(ARCHETYPES);
+      }
+      buildCharGrid();
+    });
+  });
+
+  grid.querySelectorAll('.roll-char-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      charArchetypes[idx] = rand(ARCHETYPES);
+      buildCharGrid();
+    });
+  });
+
+  grid.querySelectorAll('.rating-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      charRatings[idx] = btn.dataset.rating;
+      buildCharGrid();
+    });
+  });
+}
+
+function getCharData(i) {
+  if (charModes[i] === 'random') {
+    const arch = charArchetypes[i];
+    return {
+      tags: arch ? arch.tags : '',
+      name: arch ? arch.name : '',
+      rating: charRatings[i],
+      isRandom: true,
+    };
+  }
+  const ta = document.getElementById(`charInput${i}`);
+  const val = ta ? ta.value.trim() : '';
+  return { tags: val, name: val ? 'Custom OC' : '', rating: 'custom', isRandom: false };
+}
+
+function buildRatingTags(charData, xOutcome) {
+  const r = charData.rating;
+  if (r === 'custom') return { pos: '', neg: '', badgeLabel: 'custom', badgeClass: 'badge-custom' };
+  if (r === 'pg')  return { pos: RATING_TAGS.pg.positive,  neg: RATING_TAGS.pg.negative,  badgeLabel: 'PG',   badgeClass: 'badge-pg' };
+  if (r === 'pgr') return { pos: RATING_TAGS.pgr.positive, neg: RATING_TAGS.pgr.negative, badgeLabel: 'PG-R', badgeClass: 'badge-pgr' };
+  if (r === 'r')   return { pos: RATING_TAGS.r.positive,   neg: RATING_TAGS.r.negative,   badgeLabel: 'R',    badgeClass: 'badge-r' };
+  if (r === 'x')   return {
+    pos: xOutcome.tags,
+    neg: RATING_TAGS.x.negative,
+    badgeLabel: `X \u2014 ${xOutcome.label}`,
+    badgeClass: 'badge-x',
+  };
+  return { pos: '', neg: '', badgeLabel: '', badgeClass: '' };
+}
+
+function buildPrompt(card, charData, model, xOutcome) {
+  const prefix = MODEL_PREFIXES[model];
+  const suitKey = getSuitKey(card);
+  const stylePrefix = CARD_STYLES_BY_MODEL[model][suitKey] || CARD_STYLES_BY_MODEL[model].major;
+  const { pos: ratingPos, neg: ratingNeg } = buildRatingTags(charData, xOutcome);
+
+  let cardVisual = `${card.style}, ${stylePrefix}`;
+  if (card.reversed) cardVisual += ', inverted symbolism, shadowed, disrupted harmony';
+
+  const positive = [
+    prefix.positive,
+    charData.tags,
+    ratingPos,
+    cardVisual,
+    'tarot card setting, arcane atmosphere, mystical composition',
+  ].filter(Boolean).join(', ');
+
+  const negative = [
+    prefix.negative,
+    ratingNeg,
+    'multiple characters, extra person, deformed, extra limbs, mutilated',
+  ].filter(Boolean).join(', ');
+
+  return { positive, negative };
+}
+
+function copyText(text, btn) {
+  const write = () => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(write);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    write();
+  }
+}
+
+function doReading() {
+  const errorMsg = document.getElementById('errorMsg');
+  let valid = true;
+  for (let i = 0; i < 3; i++) {
+    const d = getCharData(i);
+    if (!d.tags) { valid = false; break; }
+  }
+  if (!valid) {
+    errorMsg.classList.add('visible');
+    setTimeout(() => errorMsg.classList.remove('visible'), 3000);
+    return;
+  }
+  errorMsg.classList.remove('visible');
+
+  const spreadInfo = SPREADS[selectedSpread];
+  document.getElementById('spreadLabel').textContent = 'Three-card spread — ' + spreadInfo.positions.join(' · ');
+
+  const drawn = shuffle(TAROT).slice(0, 3).map(c => ({ ...c, reversed: Math.random() < 0.25 }));
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 3; i++) {
+    const card = drawn[i];
+    const posLabel = SPREADS[selectedSpread].positions[i];
+    const charData = getCharData(i);
+    const xOutcome = charData.rating === 'x' ? rollXOutcome() : X_OUTCOMES[0];
+    const { pos: ratingPos, badgeLabel, badgeClass } = buildRatingTags(charData, xOutcome);
+    const { positive, negative } = buildPrompt(card, charData, selectedModel, xOutcome);
+
+    const col = document.createElement('div');
+    col.className = 'result-card';
+
+    col.innerHTML = `
+      <div class="card-header">
+        <div class="card-position">${posLabel}</div>
+        <div class="card-name">${card.name}${card.reversed ? ' (Reversed)' : ''}</div>
+        <div class="card-meta">
+          <span class="suit-badge ${getSuitClass(card.suit)}">${card.suit}</span>
+          ${card.reversed ? '<span class="reversed-badge">Reversed</span>' : ''}
+          ${badgeLabel ? `<span class="result-rating-badge ${badgeClass}">${badgeLabel}</span>` : ''}
+        </div>
+        <div class="card-char-name">${charData.name}</div>
+      </div>
+      <div class="card-theme">${card.theme}</div>
+      <div class="prompt-block">
+        <div class="prompt-label">Positive</div>
+        <div class="prompt-text" id="pos${i}">${positive}</div>
+        <button class="copy-btn" data-target="pos${i}">Copy</button>
+        <div class="prompt-label" style="margin-top:0.5rem">Negative</div>
+        <div class="prompt-text negative" id="neg${i}">${negative}</div>
+        <button class="copy-btn" data-target="neg${i}">Copy</button>
+      </div>
+    `;
+    grid.appendChild(col);
+  }
+
+  grid.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      copyText(el.textContent, btn);
+    });
+  });
+
+  const results = document.getElementById('resultsSection');
+  results.classList.add('visible');
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// INIT
+buildCharGrid();
+
+document.querySelectorAll('.model-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedModel = btn.dataset.model;
+  });
+});
+
+document.getElementById('nsfwToggle').addEventListener('change', e => {
+  isNSFW = e.target.checked;
+  document.body.classList.toggle('nsfw-on', isNSFW);
+  buildCharGrid();
+});
+
+document.getElementById('pullBtn').addEventListener('click', doReading);
+
+// SPREAD SELECTOR
+document.querySelectorAll('.spread-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.spread-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedSpread = btn.dataset.spread;
+    const sp = SPREADS[selectedSpread];
+    document.getElementById('pullHint').textContent = 'Three cards drawn from the full 78-card deck — ' + sp.positions.join(' · ');
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  document.getElementById('resultsSection').classList.remove('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// AGE GATE
+const ageGate = document.getElementById('ageGate');
+const AGE_KEY = 'wp-tarot-age-confirmed';
+
+if (!sessionStorage.getItem(AGE_KEY)) {
+  ageGate.classList.remove('hidden');
+} else {
+  ageGate.classList.add('hidden');
+}
+
+document.getElementById('ageConfirm').addEventListener('click', () => {
+  sessionStorage.setItem(AGE_KEY, '1');
+  ageGate.classList.add('hidden');
+});
+
+document.getElementById('ageDeny').addEventListener('click', () => {
+  window.location.href = 'about:blank';
+});
+
+// INFO MODAL
+const infoModal = document.getElementById('infoModal');
+
+document.getElementById('infoBtn').addEventListener('click', () => {
+  infoModal.classList.add('open');
+});
+
+document.getElementById('infoClose').addEventListener('click', () => {
+  infoModal.classList.remove('open');
+});
+
+infoModal.addEventListener('click', e => {
+  if (e.target === infoModal) infoModal.classList.remove('open');
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') infoModal.classList.remove('open');
+});
+</script>
+</body>
+</html>
